@@ -9,7 +9,7 @@ import EnvironmentBar from '../components/EnvironmentBar';
 import { getAdvisorHintKey, getPreActionTradeoffs } from '../lib/advisorRules';
 import { getCurrentScenario } from '../data/mockData';
 import type { DailyActionDraft } from '../types';
-import { ArrowLeft, BotMessageSquare, AlertCircle } from 'lucide-react';
+import { ArrowLeft, BotMessageSquare, Sprout, DollarSign, Bug, ShieldCheck, Play } from 'lucide-react';
 
 export default function PlayPage() {
   const navigate = useNavigate();
@@ -23,8 +23,6 @@ export default function PlayPage() {
     ventilation: 'normal',
     lighting: 'auto',
   });
-  
-  const [eventConfirmed, setEventConfirmed] = useState(false);
 
   useEffect(() => {
     if (!session) {
@@ -35,9 +33,7 @@ export default function PlayPage() {
   }, [session, navigate]);
 
   useEffect(() => {
-    // Reset confirmation status and draft when a new day starts
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setEventConfirmed(false);
+    // Reset draft when a new day starts
     setDraft({
       irrigation: 'normal',
       heating: 'normal',
@@ -68,37 +64,13 @@ export default function PlayPage() {
 
   const hintKey = getAdvisorHintKey(currentDayData);
   const tradeoffs = getPreActionTradeoffs(draft);
-  const hasEvent = !!currentDayData.event_card;
-  const isEventBlocking = hasEvent && !eventConfirmed;
+  const healthPercent = simState.growthScore * 0.5 + (100 - simState.diseaseRisk) * 0.5;
+  const isDiseased = simState.diseaseRisk > 50;
   
   const allowedControls = scenario.allowed_controls || ['irrigation', 'heating', 'ventilation', 'lighting'];
 
   return (
     <div className="min-h-dvh flex flex-col bg-slate-900 pb-safe">
-      {/* Event Block Overlay */}
-      {isEventBlocking && currentDayData.event_card && (
-        <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className="bg-slate-800 border border-slate-700/50 p-6 rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95">
-              <div className="w-14 h-14 rounded-full bg-brand-500/20 text-brand-400 flex items-center justify-center mb-4">
-                 <AlertCircle size={32} />
-              </div>
-              <h2 className="text-brand-400 text-xs font-bold uppercase tracking-widest mb-1">{t('play.eventTitle')}</h2>
-              <h3 className="text-xl font-bold text-white mb-2 leading-tight">
-                 {isKo && currentDayData.event_card.title_ko ? currentDayData.event_card.title_ko : currentDayData.event_card.title}
-              </h3>
-              <p className="text-slate-300 text-sm mb-6 leading-relaxed">
-                 {isKo && currentDayData.event_card.description_ko ? currentDayData.event_card.description_ko : currentDayData.event_card.description}
-              </p>
-              <button 
-                onClick={() => setEventConfirmed(true)}
-                className="w-full py-4 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold active:scale-95 transition-transform"
-              >
-                {t('play.eventConfirm')}
-              </button>
-           </div>
-        </div>
-      )}
-
       {/* Header */}
       <header className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10 shrink-0">
          <button onClick={() => navigate('/')} className="w-10 h-10 flex items-center justify-center relative -left-2 text-slate-400 hover:text-white">
@@ -120,44 +92,65 @@ export default function PlayPage() {
       {/* Progress */}
       <Timeline currentDay={session.current_day} totalDays={totalDays} results={results || []} />
 
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-        
-        {/* Daily Objective if present */}
-        {(currentDayData.daily_objective || currentDayData.daily_objective_ko) && (
-          <div className="bg-emerald-900/40 border border-emerald-500/30 rounded-xl p-3 flex gap-3 animate-pulse">
-            <div className="shrink-0 text-emerald-400 pt-0.5">🎯</div>
-            <div>
-              <div className="text-[10px] font-bold text-emerald-400/80 mb-0.5 uppercase tracking-wide">{t('play.objective')}</div>
-              <div className="text-sm font-semibold text-emerald-100 break-keep">
-                {isKo && currentDayData.daily_objective_ko ? currentDayData.daily_objective_ko : currentDayData.daily_objective}
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
 
-        {/* Environment section */}
+        {/* 1. Environment section */}
         <div>
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-            {t('play.environment')}
+          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+            Today's Environment
           </h2>
           <EnvironmentBar day={currentDayData} />
         </div>
 
-        {/* Visualizer */}
+        {/* 2. Visualizer (Tycoon Mini Board) */}
         <CropVisualizer simState={simState} day={currentDayData} />
 
-        {/* Advisor Hint */}
-        <div className="bg-indigo-900/40 border border-indigo-500/30 rounded-2xl p-4 flex gap-3 shadow-lg shadow-indigo-900/20">
-          <div className="flex-shrink-0 w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-300">
-            <BotMessageSquare size={20} />
-          </div>
-          <div>
-            <h3 className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">
-              {t('advisor.title')}
-            </h3>
-            <p className="text-sm text-indigo-100/90 leading-snug font-medium break-keep">
-              {t(hintKey)}
-            </p>
+        {/* 3. Current Status Panel */}
+        <div className="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-3 grid grid-cols-3 gap-2">
+           <div className="flex flex-col items-center justify-center bg-slate-800/80 rounded-xl p-2 border border-slate-700">
+             <Sprout size={16} className="text-brand-400 mb-1" />
+             <span className="text-[10px] uppercase text-slate-400 font-bold mb-0.5">Growth</span>
+             <span className="text-sm font-black text-white">{simState.growthScore.toFixed(0)}</span>
+           </div>
+           <div className="flex flex-col items-center justify-center bg-slate-800/80 rounded-xl p-2 border border-slate-700">
+             <DollarSign size={16} className="text-yellow-400 mb-1" />
+             <span className="text-[10px] uppercase text-slate-400 font-bold mb-0.5">Yield Est.</span>
+             <span className="text-sm font-black text-white">{simState.yieldPotential.toFixed(0)}</span>
+           </div>
+           <div className={`flex flex-col items-center justify-center rounded-xl p-2 border ${isDiseased ? 'bg-rose-500/10 border-rose-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+             {isDiseased ? <Bug size={16} className="text-rose-400 mb-1" /> : <ShieldCheck size={16} className="text-emerald-400 mb-1" />}
+             <span className={`text-[10px] uppercase font-bold mb-0.5 ${isDiseased ? 'text-rose-400' : 'text-emerald-400'}`}>Condition</span>
+             <span className={`text-sm font-black ${isDiseased ? 'text-white' : 'text-white'}`}>{isDiseased ? 'Risky' : 'Stable'}</span>
+           </div>
+        </div>
+
+        {/* 4. Advisor Hint & Objective */}
+        <div className="flex flex-col gap-3">
+          {(currentDayData.daily_objective || currentDayData.daily_objective_ko) && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3 flex gap-3 items-center">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">🎯</div>
+              <div>
+                <div className="text-[10px] font-bold text-emerald-400 mb-0.5 uppercase tracking-wide">Daily Goal</div>
+                <div className="text-sm font-bold text-emerald-100 break-keep leading-snug">
+                  {isKo && currentDayData.daily_objective_ko ? currentDayData.daily_objective_ko : currentDayData.daily_objective}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-2xl p-4 flex gap-3 shadow-sm">
+            <div className="flex-shrink-0 w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400">
+              <BotMessageSquare size={20} />
+            </div>
+            <div>
+              <h3 className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mb-1">
+                {t('advisor.title')}
+              </h3>
+              <p className="text-sm text-indigo-50 leading-snug font-medium break-keep">
+                {t(hintKey)}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -220,9 +213,12 @@ export default function PlayPage() {
         {/* Submit */}
         <button
           onClick={handleSubmit}
-          className="w-full bg-brand-600 hover:bg-brand-500 active:scale-95 transition-all text-white py-4 rounded-2xl font-bold shadow-xl shadow-brand-900/30 flex justify-center items-center gap-2 mb-8"
+          className="group w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 active:scale-95 transition-all text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-brand-900/40 flex justify-center items-center gap-3 mt-4 mb-4"
         >
-          {t('play.submitDay')}
+          <span>RUN PROGRESS</span>
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+             <Play size={16} className="fill-white" />
+          </div>
         </button>
       </div>
     </div>
