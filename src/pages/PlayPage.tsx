@@ -64,7 +64,6 @@ export default function PlayPage() {
 
   const hintKey = getAdvisorHintKey(currentDayData);
   const tradeoffs = getPreActionTradeoffs(draft);
-  const healthPercent = simState.growthScore * 0.5 + (100 - simState.diseaseRisk) * 0.5;
   const isDiseased = simState.diseaseRisk > 50;
   
   const allowedControls = scenario.allowed_controls || ['irrigation', 'heating', 'ventilation', 'lighting'];
