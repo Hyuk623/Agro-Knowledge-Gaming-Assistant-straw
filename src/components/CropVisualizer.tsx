@@ -20,9 +20,7 @@ export default function CropVisualizer({ simState, day }: CropVisualizerProps) {
   const isDiseased = simState.diseaseRisk > 50;
   const isCriticalDisease = simState.diseaseRisk > 80;
 
-  // 4. Yield/Fruits
-  const showFruits = simState.yieldPotential > 50;
-  const showBigFruits = simState.yieldPotential > 80;
+
 
   // 5. Light
   const isPale = simState.lightScore < 40;
@@ -32,6 +30,13 @@ export default function CropVisualizer({ simState, day }: CropVisualizerProps) {
   let moodIcon = '😊';
   if (healthPercent < 40) moodIcon = '🤒';
   if (healthPercent > 80) moodIcon = '✨';
+
+  let getCropImage = () => {
+    if (simState.growthScore < 25) return '/straw_stage1.png';
+    if (simState.growthScore < 50) return '/straw_stage2.png';
+    if (simState.growthScore < 75) return '/straw_stage3.png';
+    return '/straw_stage4.png';
+  };
 
   return (
     <div className="relative w-full aspect-video bg-gradient-to-b from-sky-900/40 to-slate-800 rounded-3xl overflow-hidden border border-slate-700/50 flex flex-col items-center justify-end pt-8 pb-4 shadow-inner">
@@ -82,36 +87,25 @@ export default function CropVisualizer({ simState, day }: CropVisualizerProps) {
           className="relative flex items-center justify-center transition-all duration-700 ease-in-out"
           style={{ transform: `scale(${scale})`, transformOrigin: 'bottom center' }}
         >
-          {/* Main Leaf Graphic */}
-          <div className="relative w-32 h-32 flex items-center justify-center">
-            {/* Base Leaves */}
-            <div className={`absolute w-24 h-24 rotate-45 rounded-tl-[80%] rounded-br-[80%] shadow-lg transition-colors duration-700 ${isPale ? 'bg-emerald-700' : 'bg-emerald-500'}`} style={{ left: '-1rem', top: '1rem' }}></div>
-            <div className={`absolute w-28 h-28 -rotate-12 rounded-tr-[80%] rounded-bl-[80%] shadow-lg transition-colors duration-700 ${isPale ? 'bg-green-800' : 'bg-green-600'}`} style={{ left: '2rem', top: '-1rem' }}></div>
-            <div className={`absolute w-24 h-24 rotate-[60deg] rounded-tl-[80%] rounded-br-[80%] shadow-lg transition-colors duration-700 ${isPale ? 'bg-emerald-800' : 'bg-emerald-500'}`} style={{ left: '4rem', top: '2rem' }}></div>
-
-            {/* Fruits overlay */}
-            {showFruits && (
-              <>
-                <div className="absolute text-3xl bottom-0 -left-4 animate-bounce" style={{ animationDuration: '3s' }}>🍓</div>
-                <div className="absolute text-4xl top-4 left-6 animate-bounce" style={{ animationDuration: '4s' }}>🍓</div>
-              </>
-            )}
-            {showBigFruits && (
-              <div className="absolute text-5xl bottom-2 right-0 animate-bounce" style={{ animationDuration: '3.5s' }}>🍓</div>
-            )}
+          {/* Main Growing Asset Graphic */}
+          <div className="relative w-48 h-48 sm:w-64 sm:h-64 flex items-center justify-center">
+            {/* Bright Halo / Backdrop to help blend the white background image */}
+            <div className="absolute inset-0 bg-white/70 rounded-full blur-[40px] z-0" />
+            
+            {/* The Generative AI 2D Asset */}
+            <img 
+               src={getCropImage()} 
+               alt="Strawberry Stage"
+               className="relative z-10 w-full h-full object-contain mix-blend-multiply transition-all duration-1000 ease-in-out"
+               style={{ filter: isPale ? 'brightness(0.8) sepia(0.3) hue-rotate(-20deg)' : 'none' }}
+            />
 
             {/* Disease overlay */}
             {isDiseased && (
-              <div className="absolute inset-0 flex items-center justify-center mix-blend-multiply opacity-80 pointer-events-none">
-                <div className="w-16 h-16 bg-stone-500 rounded-full blur-xl absolute top-0 -left-4" />
-                <div className="w-20 h-20 bg-purple-900 rounded-full blur-2xl absolute bottom-0 right-0" />
-                <span className="absolute top-2 left-2 text-2xl opacity-60">🍄</span>
+              <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none mix-blend-color-burn">
+                <div className="w-20 h-20 bg-purple-900/60 rounded-full blur-2xl absolute bottom-1/4 right-1/4" />
+                <span className="absolute top-1/4 left-1/4 text-3xl opacity-80 animate-pulse">🍄</span>
               </div>
-            )}
-
-            {/* Light lack indicator */}
-            {isPale && (
-              <div className="absolute inset-0 bg-yellow-900/20 mix-blend-color-burn rounded-full blur-md" />
             )}
           </div>
         </div>
